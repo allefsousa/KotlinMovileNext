@@ -6,30 +6,65 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import com.example.allef.next.kotlinmovilenext.R
 import com.example.allef.next.kotlinmovilenext.adapter.ProgrammingLanguageAdapter
+import com.example.allef.next.kotlinmovilenext.adapter.repositoryAdapter
+import com.example.allef.next.kotlinmovilenext.api.GithubRepositoriesResult
+import com.example.allef.next.kotlinmovilenext.api.RepositoryRetriver
 import com.example.allef.next.kotlinmovilenext.model.ProgrammingLanguage
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.longToast
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
+
+    private val repositoryRetriver = RepositoryRetriver()
+    private val callback = object : Callback<GithubRepositoriesResult>{
+        override fun onFailure(call: Call<GithubRepositoriesResult>?, t: Throwable?) {
+            longToast("Fail loading Repositories")
+        }
+
+        override fun onResponse(call: Call<GithubRepositoriesResult>?, response: Response<GithubRepositoriesResult>?) {
+            longToast("load Finishe")
+
+            response?.isSuccessful.let {
+                response?.body()?.repositories?.let {
+                    val resultList = it
+
+                    recyclerView.adapter = repositoryAdapter(it,this@MainActivity){
+                        longToast("cliked item : ${it.full_name}")
+                    }
+                }
+            }
+        }
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
 
+
+
+        loadDefaultRecyclerView()
+
+
+
+
+    }
+
+    private fun loadDefaultRecyclerView() {
         recyclerView.adapter = ProgrammingLanguageAdapter(
                 recyclerviewItems(),
                 this) {
             longToast("clicked item : ${it.title}")
+            repositoryRetriver.getLanguagesRepositories(callback,it.title)
         }
 
 
         val layouManager = LinearLayoutManager(this)
         recyclerView.layoutManager = layouManager
-
-
-
-
     }
 
     private fun recyclerviewItems():List<ProgrammingLanguage>{
